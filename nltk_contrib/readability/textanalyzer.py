@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- 
 # Sets the encoding to utf-8 to avoid problems with æøå
-
+import sys
 import nltk.data
 from nltk.tokenize import *
 import syllables_en
@@ -112,9 +112,16 @@ class textanalyzer(object):
                     #cWords.append(word)
                 else:
                     for sentence in sentences:
-                        if str(sentence).startswith(word):
-                            found = True
-                            break
+                        try:
+                            if str(sentence).startswith(word):
+                                found = True
+                                break
+                        except UnicodeEncodeError as e:
+                            #For now, ignore unicode bytes when searching for complex words
+                            print e
+                            print word
+                            sys.exit()
+                            continue
                     
                     if found: 
                         complexWords+=1
@@ -133,6 +140,8 @@ class textanalyzer(object):
                 text = unicode(text, "iso8859_1").encode("utf8")
             except UnicodeError:
                 text = unicode(text, "ascii", "replace").encode("utf8")
+        except TypeError:
+            return text.encode("utf8")
         return text
     #_setEncoding = classmethod(_setEncoding)
         
