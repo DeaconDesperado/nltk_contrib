@@ -49,7 +49,7 @@ class textanalyzer(object):
     def getWords(self, text=''):
         text = self._setEncoding(text)
         words = []
-        words = self.tokenizer.tokenize(text)
+        words = self.tokenizer.tokenize(text.decode('utf8'))
         filtered_words = []
         for word in words:
             if word in self.special_chars or word == " ":
@@ -62,6 +62,7 @@ class textanalyzer(object):
     #getWords = classmethod(getWords)
     
     def getSentences(self, text=''):
+        text = self._setEncoding(text)
         tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
         sentences = tokenizer.tokenize(text)
         return sentences
@@ -112,38 +113,35 @@ class textanalyzer(object):
                     #cWords.append(word)
                 else:
                     for sentence in sentences:
-                        try:
-                            if str(sentence).startswith(word):
-                                found = True
-                                break
-                        except UnicodeEncodeError as e:
-                            #For now, ignore unicode bytes when searching for complex words
-                            print e
-                            print word
-                            sys.exit()
-                            continue
+                        if sentence.startswith(word.encode('utf8')):
+                            found = True
+                            break
+                        continue
                     
                     if found: 
                         complexWords+=1
                         found = False
                     
             curWord.remove(word)
-        #print cWords
         return complexWords
     #countComplexWords = classmethod(countComplexWords)
     
     def _setEncoding(self,text):
-        try:
-            text = unicode(text, "utf8").encode("utf8")
-        except UnicodeError:
+        attempt_encodings = ['utf8','iso8859_1','ascii']
+        for encoding in attempt_encodings:
             try:
-                text = unicode(text, "iso8859_1").encode("utf8")
-            except UnicodeError:
-                text = unicode(text, "ascii", "replace").encode("utf8")
-        except TypeError:
-            return text.encode("utf8")
+                text = unicode(text,encoding,errors='strict').encode('utf8')
+                break
+            except TypeError:
+                #Double utf8 encoding will raise a type error
+                text = text.encode('utf8')
+                break
+            except UnicodeError as e:
+                if encoding == 'ascii':
+                    logging.warning('Coulnd not decode input, using ascii with replace chars')
+                    text = unicode(text,'ascii','replace').encode('utf8')
+                    break
         return text
-    #_setEncoding = classmethod(_setEncoding)
         
         
     def demo(self):
